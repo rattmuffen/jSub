@@ -1,52 +1,62 @@
 package util;
 
+import java.awt.Dimension;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.util.Properties;
+
+import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 
 import exceptions.NoCredentialFileFoundException;
 
 /**
- * Class to store/load user credentials.
- * Stores in chararray, but uses regular String internally.
+ * Class to store/load user credentials from properties file.
+ * Uses jasypt for encryption and decryption of passwords.
  * @author rattmuffen
- * @version 0.2.1
+ * @version 0.3
  */
 public class UserCredentials implements Serializable {
-	
+
 
 	private static final long serialVersionUID = 1L;
-	
+
 	private String username;
 	private String password;
 
-	private byte[] usrname = {};
-	private byte[] pssword = {};
+	private String passwordPropertyKey = "OpenSubtitlesPassword";
+	private String usernamePropertyKey = "OpenSubtitlesUsername";
 	
-	
+	private String encryptionPassword = "jsub";
+
 	public static boolean existsValidCredentialFile(String dir) throws NoCredentialFileFoundException {
 		File f = new File(dir);
 		File[] files = f.listFiles();
-		
+
 		for (int i = 0; i < files.length; i++) {
 			if (f.isFile() && f.getAbsolutePath().endsWith("credentials")) {
 				return true;
 			}
 		}
-		
 		return false;
 	}
-	
+
 	public UserCredentials(String u, String p) {
 		username = u;
 		password = p;
-		
 	}
-	
-	
+
 	public String getUsername() {
 		return username;
 	}
@@ -63,55 +73,57 @@ public class UserCredentials implements Serializable {
 		this.password = password;
 	}
 
-
-	
-	public void save(String filename) {
+	public void load(String filename) throws NoCredentialFileFoundException, IOException {
 		try {
-			File file = new File(filename);
-			
-			usrname = username.getBytes();
-			pssword = password.getBytes();
-			
-			for (int i = 0; i < usrname.length; i++) {
-				usrname[i] = (byte) (usrname[i]*2);
-			}
-			
-			for (int i = 0; i < pssword.length; i++) {
-				pssword[i] = (byte) (pssword[i]*2);
-			}
-			
-	        ObjectOutputStream serialOut = new ObjectOutputStream(new FileOutputStream(file));
-	        serialOut.writeObject(this);
-	        
-	        serialOut.close();
-		} catch (Exception e) {
-			e.printStackTrace();
+			Properties file = new Properties();
+			file.load(new FileInputStream(new File(filename)));
+
+			String encryptedPropertyValue = file.getProperty(passwordPropertyKey);
+
+			StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+			encryptor.setPassword(encryptionPassword);
+
+			username = file.getProperty(usernamePropertyKey);
+			password = encryptor.decrypt(encryptedPropertyValue);
+		} catch (FileNotFoundException e) {
+			throw new NoCredentialFileFoundException();
 		}
 	}
-	
-	
 
-	public void load(String filename) throws NoCredentialFileFoundException {
+
+	public void save(String filename) throws IOException, NoCredentialFileFoundException {
 		try {
-			File file = new File(filename);
-			
-			ObjectInputStream serialIn = new ObjectInputStream(new FileInputStream(file));
+			Properties file = new Properties();
+			file.load(new FileInputStream(new File(filename)));
 
-			UserCredentials uc = ((UserCredentials) serialIn.readObject());
-			
-			
-			this.usrname =((UserCredentials) serialIn.readObject()).usrname;
-			this.pssword =((UserCredentials) serialIn.readObject()).pssword;
-			
-			
-			username = uc.username;
-			password = uc.password;
-			
-			serialIn.close();
-		} catch (java.io.EOFException eofe) {
-			eofe.printStackTrace();
-		} catch (Exception e) {
+			StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+			encryptor.setPassword(encryptionPassword);
+
+			String encryptedPassword = encryptor.encrypt(password);
+
+			file.setProperty(passwordPropertyKey, encryptedPassword);
+			file.setProperty(usernamePropertyKey, username);
+
+			file.store(new FileOutputStream(new File(filename)),"- jSub Credentials file -");
+		} catch (FileNotFoundException e) {
 			throw new NoCredentialFileFoundException();
+		}
+	}
+
+	public void createFileAndSave(String filename) {
+		File f = new File(filename);
+		
+		try {
+			boolean success = f.createNewFile();
+			
+			if (success) {
+				save(filename);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (NoCredentialFileFoundException e) {
+			
+			e.printStackTrace();
 		}
 	}
 }

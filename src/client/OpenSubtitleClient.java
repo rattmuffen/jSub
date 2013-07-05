@@ -21,13 +21,6 @@ import util.OpenSubtitlesHasher;
 import util.UserCredentials;
 import util.Utils;
 
-/*
- * 0.2.1: Reads username and password from credentials-file instead of
- * storing it in the source code ;p
- * 
- * 
- */
-
 /**
  * Class for communicating with OpenSubtitle.org server.
  * Uses XmlRpcClient.

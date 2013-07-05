@@ -3,12 +3,15 @@ package gui;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+
+import exceptions.NoCredentialFileFoundException;
 
 import util.UserCredentials;
 
@@ -69,7 +72,13 @@ public class LoginView extends JPanel implements ActionListener {
 				controller.setViewByLoginSuccess(false);
 			} else {
 				UserCredentials uc = new UserCredentials(usernameField.getText(), passwordField.getText());
-				uc.save("credentials");
+				try {
+					uc.save("credentials");
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (NoCredentialFileFoundException e) {
+					uc.createFileAndSave("credentials");
+				}
 				controller.relogin(uc);
 			}
 		}
