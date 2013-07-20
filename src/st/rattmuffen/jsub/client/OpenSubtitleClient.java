@@ -1,8 +1,4 @@
-package client;
-
-import exceptions.UnautharizedException;
-import exceptions.UndefinedException;
-import gui.MainView;
+package st.rattmuffen.jsub.client;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,22 +12,20 @@ import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 
-import util.FileUtils;
-import util.OpenSubtitlesHasher;
-import util.UserCredentials;
-import util.Utils;
+import st.rattmuffen.jsub.exceptions.UnautharizedException;
+import st.rattmuffen.jsub.exceptions.UndefinedException;
+import st.rattmuffen.jsub.gui.SubPanel;
+import st.rattmuffen.jsub.util.FileUtils;
+import st.rattmuffen.jsub.util.OpenSubtitlesHasher;
+import st.rattmuffen.jsub.util.UserCredentials;
 
 /**
  * Class for communicating with OpenSubtitle.org server.
  * Uses XmlRpcClient.
+ * @version 0.3
  * @author rattmuffen
- * @version 0.2.1
  */
-
-
-//TODO fixa ordentlig result-class?
-
-public class OpenSubtitleClient extends XmlRpcClient {
+public class OpenSubtitleClient extends XmlRpcClient implements SubtitleClient {
 
 	XmlRpcClientConfigImpl clientConfig;
 	
@@ -43,9 +37,7 @@ public class OpenSubtitleClient extends XmlRpcClient {
 	
 	private boolean isLoggedIn;
 	
-	
-	
-	HashMap<String,Object> loginInfo;
+	QueryResult loginInfo;
 	String token;
 	String hash;
 	boolean wasLoginOk;
@@ -84,9 +76,6 @@ public class OpenSubtitleClient extends XmlRpcClient {
 	    this.setConfig(clientConfig);
 	}
 	
-	/*public HashMap<String,Object> execute(String ) {
-		
-	}*/
 	
 	/**
 	 * Getter for token.
@@ -123,10 +112,10 @@ public class OpenSubtitleClient extends XmlRpcClient {
 	 * @return Result of logout.
 	 * @throws XmlRpcException
 	 */
-	public HashMap<String, Object> logout() throws XmlRpcException {
+	public QueryResult logout() throws XmlRpcException {
 		isLoggedIn = false;
 		
-		return (HashMap<String, Object>) this.execute("LogOut", new String[] {token});
+		return new QueryResult(this.execute("LogOut", new String[] {token}));
 	}
 	
 	/**
@@ -138,7 +127,7 @@ public class OpenSubtitleClient extends XmlRpcClient {
 	 * @return Result of the search.
 	 * @throws XmlRpcException
 	 */
-	public  HashMap<String,Object> search(String token, String hash, String lang, long size) throws XmlRpcException {
+	private QueryResult search(String token, String hash, String lang, long size) throws XmlRpcException {
 	      ArrayList<Object> params = new ArrayList<Object>();
 	      ArrayList<Object> searches = new ArrayList<Object>();
 	      
@@ -152,63 +141,104 @@ public class OpenSubtitleClient extends XmlRpcClient {
 	      params.add(token);
 	      params.add(searches);
 	    
-	      return (HashMap<String,Object>) this.execute("SearchSubtitles",params);
+	      return new QueryResult(this.execute("SearchSubtitles",params));
 	}
 	
-	
-	
-	//TODO detta kanske skall g�ras i en egen Thread eller?
-	public boolean downloadSub(String filename, String language, MainView gui) throws IOException,XmlRpcException   {
+	/**
+	 * Get a QueryResult of a search.
+	 * @param filename Filename of file to download subs for.
+	 * @param language Language of wanted sub.
+	 * @return QueryResult containing search result
+	 * @throws IOException
+	 * @throws XmlRpcException
+	 */
+	public QueryResult performSearch(String filename, String language, boolean dlFirst, SubPanel controller) 
+			throws IOException, XmlRpcException {
 		if (this.isLoggedIn() && !this.getToken().equals(OpenSubtitleClient.NULL_TOKEN)) {
 			
 			movie = new File(filename);
 			hash = OpenSubtitlesHasher.computeHash(movie); 
 			
-			gui.addTextToMessageArea("Hash: " + hash, true);
-			gui.addTextToMessageArea("Size: " + movie.length() +" bytes.", true);
 		    
-		    HashMap<String,Object> searchResult = this.search(token, hash, language, movie.length());
+		    QueryResult searchResult = this.search(token, hash, language, movie.length());
+		    
+		    if (dlFirst) {
+		    	 if (searchResult.get("data") instanceof Object[]) {
+					   Object[] resultArray = (Object[]) searchResult.get("data");
+					   
+					   if (resultArray.length>=0) {
+						   HashMap<String, Object> firstHit = (HashMap<String, Object>) resultArray[0];
+						   String dlURL = (String) firstHit.get("SubDownloadLink");
+						   
+						   controller.downloadAndExtractSubArchive(movie, dlURL);
+						   
+					   }
+		    	 }
+		    }
+		    
+		    return searchResult;
+		} 
+		
+		return null;
+	}
+	
+	/**
+	 * Search and automatically download first hit for file.
+	 * @param filename Filename of file to download subs for.
+	 * @param language Language of wanted sub.
+	 * @return true if succeeded, false if not
+	 * @throws IOException
+	 * @throws XmlRpcException
+	 */
+	public boolean searchAndDownloadSub(String filename, String language) 
+			throws IOException,XmlRpcException   {
+		if (this.isLoggedIn() && !this.getToken().equals(OpenSubtitleClient.NULL_TOKEN)) {
+			
+			movie = new File(filename);
+			hash = OpenSubtitlesHasher.computeHash(movie); 
+			
+			System.out.println("Hash: " + hash);
+			System.out.println("Size: " + movie.length() +" bytes.");
+		    
+		    QueryResult searchResult = this.search(token, hash, language, movie.length());
 		    String dlURL = "";
 		    
 		    if (searchResult.get("data") instanceof Object[]) {
 			   Object[] resultArray = (Object[]) searchResult.get("data");
 			   
 			   if (resultArray.length>=0) {
-				   gui.addTextToMessageArea("!Found subtitle for this file!", true);
+				   System.out.println("Found subtitle for this file!");
 				   
 				   HashMap<String, Object> firstHit = (HashMap<String, Object>) resultArray[0];
 				   dlURL = (String) firstHit.get("SubDownloadLink");
-				   
-				   String test = (String) firstHit.get("IDMovieImdb");
-				   System.out.println("http://www.imdb.com/title/tt" + test );
-				   
+								   
 				   File gzFile = new File(FileUtils.getDir(movie) +  new File(dlURL).getName());
 				   
-				   gui.addTextToMessageArea("Downloading...", true);
+				   System.out.println("Downloading...");
 				   FileUtils.download(new URL(dlURL), gzFile);
 	  
-
 				   File outFile = new File(FileUtils.getDir(movie) + FileUtils.getNameWithoutExt(movie) + ".srt");
 				   FileUtils.uncompress(gzFile, outFile);
-				   gui.addTextToMessageArea("Download completed!", true);
+				   System.out.println("Download completed!");
 				  
 				   gzFile.delete();
-				   
-				   
-				   gui.addTextToMessageArea("IMDB link: <a href=\"http://www.imdb.com/title/tt" + test + "\"> CLICK HERE LOL</a>",true);
 				   return true;
 			   } else {
-				   gui.addTextToMessageArea("Found no subs for that release. Sorry!", true);
-				   gui.addTextToMessageArea("<a href=\"http://subscene.com/s.aspx?q=" + Utils.getHTMLCompliantString(FileUtils.getNameWithoutExt(movie)) + "\">SubScene.com search</a>",true);
+				   System.out.println("Found no subs for that release. Sorry!");
 				   return false;
 			   }
 		   } else {
-			   gui.addTextToMessageArea("Found no subs in that language. Sorry!", true);
-			   gui.addTextToMessageArea("<a href=\"http://subscene.com/s.aspx?q=" + Utils.getHTMLCompliantString(FileUtils.getNameWithoutExt(movie)) + "\">SubScene.com search</a>",true);
+			   System.out.println("Found no subs in that language. Sorry!");
 			   return false;
 		   }
 		}
 		return false;
+	}
+
+
+	public QueryResult performSearch(String canonicalPath, String langCode, SubPanel controller) 
+			throws IOException, XmlRpcException {
+		return performSearch(canonicalPath, langCode, false, controller);
 	}
 	
 }

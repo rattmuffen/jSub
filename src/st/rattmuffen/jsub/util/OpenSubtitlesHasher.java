@@ -1,4 +1,4 @@
-package util;
+package st.rattmuffen.jsub.util;
 
 import java.io.DataInputStream;
 import java.io.File;

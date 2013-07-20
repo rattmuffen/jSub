@@ -1,4 +1,4 @@
-package exceptions;
+package st.rattmuffen.jsub.exceptions;
 
 import java.util.HashMap;
 

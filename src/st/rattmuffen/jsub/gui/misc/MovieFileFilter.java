@@ -1,4 +1,4 @@
-package gui.misc;
+package st.rattmuffen.jsub.gui.misc;
 
 import java.io.File;
 

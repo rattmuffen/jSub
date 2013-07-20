@@ -7,6 +7,5 @@ It uses apache-xmlrpc 3.1.3 to communicate with OpenSubtitles.org API
 Usage
 -------
 
-Step 1: Run java -jar jSub-0.2.1.jar (or double-click if you're that kind of person).
+Step 1: Run the jar file (or start the program with a file as argument).
 Step 2: Drag movie file(s) to the drop area. Or click Browse 
-

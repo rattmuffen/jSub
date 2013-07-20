@@ -1,6 +1,4 @@
-package gui.misc;
-
-import gui.MainView;
+package st.rattmuffen.jsub.gui.misc;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -12,19 +10,21 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.TransferHandler;
 
+import st.rattmuffen.jsub.gui.SubPanel;
 
-@SuppressWarnings("serial")
+
 /**
  * Simple class for handling drag and drop.
+ * @version 0.2.1
  * @author rattmuffen
- * @ver 0.2.1
  */
 public class FileTransferHandler extends TransferHandler {
 	
+	private static final long serialVersionUID = 1L;
 	private List<File> importedFiles = null;
-	private MainView parent;
+	private SubPanel parent;
 	
-	public FileTransferHandler(MainView gui) {
+	public FileTransferHandler(SubPanel gui) {
 		super();
 		
 		parent = gui;

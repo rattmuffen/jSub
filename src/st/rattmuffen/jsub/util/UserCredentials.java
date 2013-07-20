@@ -1,25 +1,16 @@
-package util;
+package st.rattmuffen.jsub.util;
 
-import java.awt.Dimension;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.security.Key;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.util.Properties;
 
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 
-import exceptions.NoCredentialFileFoundException;
+import st.rattmuffen.jsub.exceptions.NoCredentialFileFoundException;
 
 /**
  * Class to store/load user credentials from properties file.

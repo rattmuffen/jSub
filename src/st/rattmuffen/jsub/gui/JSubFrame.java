@@ -1,30 +1,32 @@
-package gui;
+package st.rattmuffen.jsub.gui;
 
 import java.awt.Dimension;
-import java.net.MalformedURLException;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.UIManager;
 
-import util.UserCredentials;
+import st.rattmuffen.jsub.JSub;
+import st.rattmuffen.jsub.client.OpenSubtitleClient;
+import st.rattmuffen.jsub.exceptions.NoCredentialFileFoundException;
+import st.rattmuffen.jsub.exceptions.UnautharizedException;
+import st.rattmuffen.jsub.util.UserCredentials;
 
-import client.OpenSubtitleClient;
-import exceptions.NoCredentialFileFoundException;
-import exceptions.UnautharizedException;
-
+/**
+ * Frame that either displays the LoginPanel or the MainPanel. 
+ * @version 0.3
+ * @author rattmuffen
+ */
 public class JSubFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
 	static final Dimension WINDOW_DIMENSION = new Dimension(350,200);
-	static final String WINDOW_TITLE = "jSub - 0.3 indev - by rattmuffen 2013";
-	static final String DEFAULT_CREDENTIAL_FILENAME = "credentials";
+	static final String WINDOW_TITLE = "jSub - 0.3 - rattmuffen 2013";
 
 	OpenSubtitleClient client;
-
-	public JSubFrame(String string) throws Exception {
-		super(string);
+	
+	public JSubFrame() throws Exception {
+		super(WINDOW_TITLE);
 		
 		this.pack();
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -32,72 +34,48 @@ public class JSubFrame extends JFrame {
 		this.setVisible(true);
 
 		try {
-			System.out.println("Looking after credential file: " + DEFAULT_CREDENTIAL_FILENAME);
+			System.out.println("Looking after credential file: " + JSub.DEFAULT_CREDENTIAL_FILENAME);
 
 			UserCredentials credentials = new UserCredentials("", "");
-			credentials.load(DEFAULT_CREDENTIAL_FILENAME);
-
-
+			credentials.load(JSub.DEFAULT_CREDENTIAL_FILENAME);
+			
 			client = new OpenSubtitleClient(credentials);
-			System.out.println("loaded client with credentials: " + client.uc.getUsername() + ", " + client.uc.getPassword());
 
 			this.setViewByLoginSuccess(client.login());
-
 		}	catch (UnautharizedException ue) {
+			ue.printStackTrace();
 			this.setViewByLoginSuccess(false);
 
 		} catch (NoCredentialFileFoundException e) {
+			e.printStackTrace();
 			this.setViewByLoginSuccess(false);
-
-
 		} catch (Exception evt) {
-			//TODO error handling yay!
 			evt.printStackTrace();
 			System.exit(ERROR);
 		}
-
-
-
 	}
-
 
 	public void relogin(UserCredentials newCredentials) {
 		try {
 			client = new OpenSubtitleClient(newCredentials);
-			System.out.println("loaded client with credentials: " + client.uc.getUsername() + ", " + client.uc.getPassword());
 			this.setViewByLoginSuccess(client.login());
 
 		}	catch (UnautharizedException ue) {
 			this.setViewByLoginSuccess(false);
 		} catch (Exception evt) {
-			//TODO error handling yay!
 			evt.printStackTrace();
 			System.exit(ERROR);
 		}
 	}
 
-
 	public void setViewByLoginSuccess(boolean success) {
 		if (success) {
-			System.out.println("login success!");
-			this.setContentPane(new MainView(client,this));
+			this.setContentPane(new SubPanel(client,this));
 			this.pack();
 		} else {
 			JOptionPane.showMessageDialog(this, "Error when logging in...", "jSub - Error", JOptionPane.ERROR_MESSAGE);
-			this.setContentPane(new LoginView(this));
+			this.setContentPane(new LoginPanel(this));
 			this.pack();
-		}
-	}
-
-
-
-	public static void main(String[] args) {
-		try {
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
-			new JSubFrame(WINDOW_TITLE);
-		} catch (Exception e) {
-			System.err.println(e.getMessage());
-			System.exit(ERROR);
 		}
 	}
 }

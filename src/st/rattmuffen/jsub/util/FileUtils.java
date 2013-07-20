@@ -1,4 +1,4 @@
-package util;
+package st.rattmuffen.jsub.util;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -44,7 +44,6 @@ public class FileUtils {
 	 * @return Dir of file.
 	 */
 	public static String getDir(File f) {
-		//TODO det h�r kan nog g�ras smartare?? ;)
 		return f.getAbsoluteFile().getParent() + "\\";
 	}
 	
@@ -95,6 +94,4 @@ public class FileUtils {
         
         return f.getName().substring(lastPointPos+1,f.getName().length()).toLowerCase();
 	}
-
-
 }
