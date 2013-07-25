@@ -9,6 +9,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -35,6 +36,7 @@ import st.rattmuffen.jsub.client.QueryResult;
 import st.rattmuffen.jsub.gui.misc.FileTransferHandler;
 import st.rattmuffen.jsub.gui.misc.MovieFileFilter;
 import st.rattmuffen.jsub.util.FileUtils;
+import st.rattmuffen.jsub.util.PropertiesHandler;
 import st.rattmuffen.jsub.util.Utils;
 
 @SuppressWarnings("serial")
@@ -52,7 +54,7 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 
 	JPanel optionsPanel,languageSelectionPanel;
 	JScrollPane scrollPane;
-	
+
 	OptionCheckBox dlBox, exitBox, openBox;
 	JComboBox<String> languageComboBox;
 	JButton browseButton,credentialsButton;
@@ -113,6 +115,28 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 		languageComboBox = new JComboBox<String>(Utils.acceptedLangs);
 		languageComboBox.addItemListener(this);
 		languageSelectionPanel.add(languageComboBox);
+		
+
+		// Read properties file.
+		try {
+			dlBox.checkBox.setSelected(PropertiesHandler.readProperty(PropertiesHandler.DOWNLOAD_FIRST).equals("true"));
+			exitBox.checkBox.setSelected(PropertiesHandler.readProperty(PropertiesHandler.EXIT_AFTER).equals("true"));
+			openBox.checkBox.setSelected(PropertiesHandler.readProperty(PropertiesHandler.OPEN_AFTER).equals("true"));
+			
+			languageComboBox.setSelectedIndex(Integer.parseInt(PropertiesHandler.readProperty(PropertiesHandler.LANGUAGE)));
+		} catch (FileNotFoundException e) {
+			JOptionPane.showMessageDialog(this, "Could not find properties file!\n" + e.getMessage(),
+					"jSub - Error", JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this, "Error when accessing properties file!\n" + e.getMessage(),
+					"jSub - Error", JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		} catch (NumberFormatException e) {
+			JOptionPane.showMessageDialog(this, "Illegal property value present!",
+					"jSub - Error", JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		}
 
 
 		optionsPanel.add(languageSelectionPanel);
@@ -163,7 +187,6 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 		this.add(sidePanel, BorderLayout.LINE_START);
 		this.add(scrollPane, BorderLayout.CENTER);
 	}
-
 
 	public void importFiles(List<File> files) {
 		QueryResult result = null;
@@ -233,7 +256,7 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 			FileUtils.uncompress(gzFile, outFile);
 
 			gzFile.delete();
-			
+
 			if (openEnabled) {
 				Desktop desktop = Desktop.getDesktop();
 				desktop.open(movie);
@@ -255,21 +278,38 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 	public void itemStateChanged(ItemEvent event) {
 		Object source = event.getItemSelectable();
 
-		if (source == exitBox.checkBox) {
-			if (event.getStateChange() == ItemEvent.DESELECTED)
-				exitEnabled = false;
-			else
-				exitEnabled = true;
-		} else if (source == openBox.checkBox) {
-			if (event.getStateChange() == ItemEvent.DESELECTED)
-				openEnabled = false;
-			else
-				openEnabled = true;
-		} else if (source == dlBox.checkBox) {
-			if (event.getStateChange() == ItemEvent.DESELECTED)
-				dlFirst = false;
-			else
-				dlFirst = true;
+		try {
+			if (source == exitBox.checkBox) {
+				if (event.getStateChange() == ItemEvent.DESELECTED)
+					exitEnabled = false;
+				else
+					exitEnabled = true;
+
+				PropertiesHandler.writeProperty(PropertiesHandler.EXIT_AFTER, String.valueOf(exitEnabled));
+			} else if (source == openBox.checkBox) {
+				if (event.getStateChange() == ItemEvent.DESELECTED)
+					openEnabled = false;
+				else
+					openEnabled = true;
+
+				PropertiesHandler.writeProperty(PropertiesHandler.OPEN_AFTER, String.valueOf(openEnabled));
+			} else if (source == dlBox.checkBox) {
+				if (event.getStateChange() == ItemEvent.DESELECTED)
+					dlFirst = false;
+				else
+					dlFirst = true;
+
+				PropertiesHandler.writeProperty(PropertiesHandler.DOWNLOAD_FIRST, String.valueOf(dlFirst));
+			} else if (source == languageComboBox) {
+
+				int lang = languageComboBox.getSelectedIndex();
+
+				PropertiesHandler.writeProperty(PropertiesHandler.LANGUAGE, String.valueOf(lang));
+			}
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this, "Error when accessing properties file!\n" + e.getMessage(),
+					"jSub - Error", JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
 		}
 	}
 

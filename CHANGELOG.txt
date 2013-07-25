@@ -1,20 +1,24 @@
-0.3 (20/07/13)		
-+Complete restructure of code!
-+New and beautiful(er) UI, thanks to WindowBuilder!
-+Login one time with secure password storage (thanks to jasypt!)
-+Program now also accepts files as arguments (credentials file must be present).
-+More languages!
-+Improved error handling.
+=== 0.3.1 (XX/YY/ZZ) ===
++ Program now saves options in file and loads them at start.
++ 
+
+=== 0.3 (20/07/13) ===
++ Complete restructure of code!
++ New and beautiful(er) UI, thanks to WindowBuilder!
++ Login one time with secure password storage (thanks to jasypt!)
++ Program now also accepts files as arguments (credentials file must be present).
++ More languages!
++ Improved error handling.
 					
-0.2.1 (12/12/11)		
-+Added ability to browse for movie-files from a regular filechooser.
-+Loads login credentials from file (.credentials) instead of from source code.
+=== 0.2.1 (12/12/11) ===
++ Added ability to browse for movie-files from a regular filechooser.
++ Loads login credentials from file (.credentials) instead of from source code.
 
-0.2 (16/09/11)
-+Decided to use GUI instead of CLI, so added a simple GUI.
-+Added a few settings: select language (only sve&eng for now), exit program when done, open movie file when done.
-+Very (very!) basic exception handling, so don't be surprised if shit doesn't work.
+=== 0.2 (16/09/11) ===
++ Decided to use GUI instead of CLI, so added a simple GUI.
++ Added a few settings: select language (only sve&eng for now), exit program when done, open movie file when done.
++ Very (very!) basic exception handling, so don't be surprised if shit doesn't work.
 
-0.1 (04/09/11)	
-+Initial release
-+Basic functionality: Get hash from file, search OS db, download if any hits, unzip and rename.
+=== 0.1 (04/09/11) ===
++ Initial release.
++ Basic functionality: Get hash from file, search OS db, download if any hits, unzip and rename.
