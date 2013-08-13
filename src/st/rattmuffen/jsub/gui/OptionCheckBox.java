@@ -32,5 +32,4 @@ public class OptionCheckBox extends JPanel{
 		checkBox = new JCheckBox("");
 		this.add(checkBox);
 	}
-
 }

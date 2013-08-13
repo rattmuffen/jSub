@@ -55,18 +55,19 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 	JPanel optionsPanel,languageSelectionPanel;
 	JScrollPane scrollPane;
 
-	OptionCheckBox dlBox, exitBox, openBox;
+	OptionCheckBox dlBox, exitBox, openBox, renameBox;
 	JComboBox<String> languageComboBox;
 	JButton browseButton,credentialsButton;
 
 	JList<QueryResult> resultList;
 	DefaultListModel<QueryResult> resultListModel;
+	ResultListCellPanel rlcp;
 
 	JFileChooser filec;
 
 	String[] acceptedFileExtensions = {"avi","wmv","mkv","iso","mp4"};
 
-	boolean exitEnabled = false, openEnabled = false, dlFirst = false;
+	boolean exitEnabled = false, openEnabled = false, dlFirst = false, renameAfter = false;
 
 	OpenSubtitleClient client;
 	JSubFrame controller;
@@ -100,7 +101,7 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 		optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS)); 
 		optionsPanel.setBorder(BorderFactory.createTitledBorder("Options"));
 
-		dlBox = new OptionCheckBox("Download first hit:");
+		dlBox = new OptionCheckBox("Auto-download first hit:");
 		dlBox.checkBox.addItemListener(this);
 
 		exitBox = new OptionCheckBox("Exit jSub when completed:");
@@ -108,8 +109,11 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 
 		openBox = new OptionCheckBox("Open movie when completed:");
 		openBox.checkBox.addItemListener(this);
+		
+		renameBox = new OptionCheckBox("Rename movie file to title.ext:");
+		renameBox.checkBox.addItemListener(this);
 
-		languageSelectionPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+		languageSelectionPanel = new JPanel(new FlowLayout());
 		languageSelectionPanel.add(new JLabel("Language:"));
 
 		languageComboBox = new JComboBox<String>(Utils.acceptedLangs);
@@ -122,6 +126,7 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 			dlBox.checkBox.setSelected(PropertiesHandler.readProperty(PropertiesHandler.DOWNLOAD_FIRST).equals("true"));
 			exitBox.checkBox.setSelected(PropertiesHandler.readProperty(PropertiesHandler.EXIT_AFTER).equals("true"));
 			openBox.checkBox.setSelected(PropertiesHandler.readProperty(PropertiesHandler.OPEN_AFTER).equals("true"));
+			renameBox.checkBox.setSelected(PropertiesHandler.readProperty(PropertiesHandler.RENAME_AFTER).equals("true"));
 			
 			languageComboBox.setSelectedIndex(Integer.parseInt(PropertiesHandler.readProperty(PropertiesHandler.LANGUAGE)));
 		} catch (FileNotFoundException e) {
@@ -143,6 +148,7 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 		optionsPanel.add(dlBox);
 		optionsPanel.add(exitBox);
 		optionsPanel.add(openBox);
+		optionsPanel.add(renameBox);
 
 		browseButton = new JButton("Browse file");
 		browseButton.addActionListener(this);
@@ -167,7 +173,7 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 		resultList.setTransferHandler(transferHandler);
 		resultList.setBorder(BorderFactory.createEmptyBorder());
 
-		ResultListCellPanel rlcp = new ResultListCellPanel(this);
+		rlcp = new ResultListCellPanel(this);
 		resultList.setCellRenderer(rlcp);
 		resultList.setOpaque(false);
 
@@ -190,14 +196,20 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 
 	public void importFiles(List<File> files) {
 		QueryResult result = null;
+		
+		DefaultListModel<QueryResult> listModel = (DefaultListModel<QueryResult>) resultList.getModel();
+        listModel.removeAllElements();
 
 		if (client.isLoggedIn()) {
 			System.out.println("Files length: " + files.size());
 			for (File file : files) {
 
 				if (Utils.checkExtension(file, acceptedFileExtensions)) {
+
 					try {
-						result = client.performSearch(file.getCanonicalPath(),Utils.getLangCode((String) languageComboBox.getSelectedItem()),dlFirst,this);
+						result = client.performSearch(file.getCanonicalPath(),
+								Utils.getLangCode((String) languageComboBox.getSelectedItem()),
+								dlFirst,this);
 
 						if (result.get("data") instanceof Object[]) {
 							Object[] resultArray = (Object[]) result.get("data");
@@ -240,18 +252,25 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 			result.message = "Not logged in!";
 		}
 
-
-		resultListModel.clear();
-		resultListModel.addElement(result);
+        listModel.addElement(result);
 	}
 
-	public void downloadAndExtractSubArchive(File movie, String dlURL) {
+	public void downloadAndExtractSubArchive(File movie, String dlURL, String movieTitle) {
 		File gzFile = new File(FileUtils.getDir(movie) +  new File(dlURL).getName());
 
 		try {
+			if (renameAfter && movieTitle != null) {
+				File newNameFile = new File(FileUtils.getDir(movie) + movieTitle + "." + FileUtils.getFileExtension(movie));
+								
+				boolean renameSuccess = movie.renameTo(newNameFile);
+				
+				
+				if (!renameSuccess) {
+					JOptionPane.showMessageDialog(this, "Could not rename the file!", "jSub - Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			
 			FileUtils.download(new URL(dlURL), gzFile);
-
-
 			File outFile = new File(FileUtils.getDir(movie) + FileUtils.getNameWithoutExt(movie) + ".srt");
 			FileUtils.uncompress(gzFile, outFile);
 
@@ -300,8 +319,14 @@ public class SubPanel extends JPanel implements ItemListener, ActionListener {
 					dlFirst = true;
 
 				PropertiesHandler.writeProperty(PropertiesHandler.DOWNLOAD_FIRST, String.valueOf(dlFirst));
-			} else if (source == languageComboBox) {
+			} else if (source == renameBox.checkBox) {
+					if (event.getStateChange() == ItemEvent.DESELECTED)
+						renameAfter = false;
+					else
+						renameAfter = true;
 
+					PropertiesHandler.writeProperty(PropertiesHandler.RENAME_AFTER, String.valueOf(renameAfter));
+			} else if (source == languageComboBox) {
 				int lang = languageComboBox.getSelectedIndex();
 
 				PropertiesHandler.writeProperty(PropertiesHandler.LANGUAGE, String.valueOf(lang));

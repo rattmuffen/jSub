@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
@@ -87,7 +88,6 @@ public class ResultListCellPanel extends JPanel implements ListCellRenderer<Quer
 		infoPanel.add(hitsLabel);
 		
 		this.hitsList.addMouseListener(this);
-		
 		this.hitsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		this.hitsList.setModel(listModel);
 		this.hitsList.setCellRenderer(new ListCellRenderer<QueryResult>() {
@@ -103,6 +103,7 @@ public class ResultListCellPanel extends JPanel implements ListCellRenderer<Quer
 						". Downloads: " + (String) value.get("SubDownloadsCnt") +
 						". Rating: " + (String) value.get("SubRating") +
 						". Bad: " + (String) value.get("SubBad")));
+				
 
 				if (isSelected)
 					jp.setBackground(Color.gray.darker());
@@ -110,9 +111,10 @@ public class ResultListCellPanel extends JPanel implements ListCellRenderer<Quer
 				return jp;
 			}
 		});
+		
+		
 		this.hitsList.setVisibleRowCount(-1);
 		this.hitsList.setName("list_1");
-
 		this.hitsList.setBackground(getBackground());
 		add(this.hitsList);
 	}
@@ -126,6 +128,8 @@ public class ResultListCellPanel extends JPanel implements ListCellRenderer<Quer
 		switch (result.type) {
 
 		case RESULT_MESSAGE:
+			listModel.clear();
+			
 			this.sourceFile = result.sourceFile;
 
 			if (result.get("data") instanceof Object[]) {
@@ -143,6 +147,8 @@ public class ResultListCellPanel extends JPanel implements ListCellRenderer<Quer
 					listModel.addElement(r);
 				}
 			}
+
+			hitsList.setModel(listModel);
 			break;
 		case ERROR_MESSAGE:
 			listModel.clear();
@@ -160,12 +166,14 @@ public class ResultListCellPanel extends JPanel implements ListCellRenderer<Quer
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		int index = hitsList.locationToIndex(e.getPoint()) - 2;
+		Point p = new Point(e.getPoint().x, e.getPoint().y - (titlePanel.getHeight() + infoPanel.getHeight()));
+		int index = hitsList.locationToIndex(p);
 		
-		if (index > -1) {
+		if (index >= 0 && p.y > 0) {
 			hitsList.setSelectedIndex(index);
 			controller.downloadAndExtractSubArchive(sourceFile, 
-					(String)hitsList.getModel().getElementAt(index).get("SubDownloadLink"));
+					(String)hitsList.getModel().getElementAt(index).get("SubDownloadLink"),
+					(String)hitsList.getModel().getElementAt(index).get("MovieName"));
 			
 			hitsList.repaint();
 		}

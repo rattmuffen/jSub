@@ -12,7 +12,7 @@ import st.rattmuffen.jsub.exceptions.UnautharizedException;
 import st.rattmuffen.jsub.util.UserCredentials;
 
 /**
- * Frame that either displays the LoginPanel or the MainPanel. 
+ * Frame that either displays the LoginPanel or the SubPanel. 
  * @version 0.3
  * @author rattmuffen
  */

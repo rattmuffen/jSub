@@ -1,6 +1,5 @@
 package st.rattmuffen.jsub.util;
 
-import java.awt.Dimension;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -20,6 +19,7 @@ public class PropertiesHandler {
 	public static final String OPEN_AFTER = "openAfter";
 	public static final String LANGUAGE = "subLang";
 	private static final String COMMENT = "-- jSub Properties file --";
+	public static final String RENAME_AFTER = "renameAfter";
 
 	private static String fileName = "properties";
 

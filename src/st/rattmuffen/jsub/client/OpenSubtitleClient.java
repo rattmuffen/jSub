@@ -92,8 +92,7 @@ public class OpenSubtitleClient extends XmlRpcClient implements SubtitleClient {
 	 * @throws UnautharizedException 
 	 */
 	public boolean login() throws XmlRpcException, UnautharizedException, UndefinedException {
-		HashMap<String, Object> result =  (HashMap<String, Object>) this.execute("LogIn", new String[] {USERNAME,PASSWORD,LANG,USERAGENT});
-		
+		QueryResult result =  new QueryResult(this.execute("LogIn", new String[] {USERNAME,PASSWORD,LANG,USERAGENT}));
 		
 		if (result.get("status").equals("200 OK")) {
 			isLoggedIn = true;
@@ -114,7 +113,6 @@ public class OpenSubtitleClient extends XmlRpcClient implements SubtitleClient {
 	 */
 	public QueryResult logout() throws XmlRpcException {
 		isLoggedIn = false;
-		
 		return new QueryResult(this.execute("LogOut", new String[] {token}));
 	}
 	
@@ -155,13 +153,10 @@ public class OpenSubtitleClient extends XmlRpcClient implements SubtitleClient {
 	public QueryResult performSearch(String filename, String language, boolean dlFirst, SubPanel controller) 
 			throws IOException, XmlRpcException {
 		if (this.isLoggedIn() && !this.getToken().equals(OpenSubtitleClient.NULL_TOKEN)) {
-			
 			movie = new File(filename);
 			hash = OpenSubtitlesHasher.computeHash(movie); 
-			
-		    
+
 		    QueryResult searchResult = this.search(token, hash, language, movie.length());
-		    
 		    if (dlFirst) {
 		    	 if (searchResult.get("data") instanceof Object[]) {
 					   Object[] resultArray = (Object[]) searchResult.get("data");
@@ -170,15 +165,12 @@ public class OpenSubtitleClient extends XmlRpcClient implements SubtitleClient {
 						   HashMap<String, Object> firstHit = (HashMap<String, Object>) resultArray[0];
 						   String dlURL = (String) firstHit.get("SubDownloadLink");
 						   
-						   controller.downloadAndExtractSubArchive(movie, dlURL);
-						   
+						   controller.downloadAndExtractSubArchive(movie, dlURL, (String) firstHit.get("MovieName"));
 					   }
 		    	 }
 		    }
-		    
 		    return searchResult;
 		} 
-		
 		return null;
 	}
 	
